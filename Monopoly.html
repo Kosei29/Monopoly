@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monopoly Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(11, 60px);
+            grid-template-rows: repeat(11, 60px);
+            border: 5px solid black;
+            background-color: green;
+            position: relative;
+        }
+        .space {
+            border: 1px solid black;
+            background: white;
+            text-align: center;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .corner {
+            background: lightgray;
+            font-weight: bold;
+        }
+        .player {
+            width: 20px;
+            height: 20px;
+            background: red;
+            border-radius: 50%;
+            position: absolute;
+            transition: 0.5s ease;
+        }
+        .dice {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="board" id="board"></div>
+    <div class="dice">
+        <button onclick="rollDice()">Roll Dice</button>
+        <p id="diceResult">Roll: </p>
+    </div>
+    
+    <script>
+        let board = document.getElementById("board");
+        let boardSpaces = [];
+        
+        // Create board spaces dynamically for the outer edge only
+        for (let i = 0; i < 11; i++) boardSpaces.push(`space-0-${i}`); // Top row left to right
+        for (let i = 1; i < 10; i++) boardSpaces.push(`space-${i}-10`); // Right column top to bottom
+        for (let i = 10; i >= 0; i--) boardSpaces.push(`space-10-${i}`); // Bottom row right to left
+        for (let i = 9; i > 0; i--) boardSpaces.push(`space-${i}-0`); // Left column bottom to top
+        
+        // Create the board spaces dynamically
+        for (let row = 0; row < 11; row++) {
+            for (let col = 0; col < 11; col++) {
+                let div = document.createElement("div");
+                div.className = "space";
+                let id = `space-${row}-${col}`;
+                div.id = id;
+                
+                if (boardSpaces.includes(id)) {
+                    div.classList.add("edge");
+                    div.innerText = id;
+                } else {
+                    div.style.background = "transparent"; // Hide inner spaces
+                }
+                
+                board.appendChild(div);
+            }
+        }
+        
+        let position = 0;
+        let player = document.createElement("div");
+        player.classList.add("player");
+        document.getElementById("space-0-0").appendChild(player); // Start at 'Go'
+        
+        function rollDice() {
+            let diceRoll = Math.floor(Math.random() * 6) + 1;
+            document.getElementById("diceResult").innerText = "Roll: " + diceRoll;
+            movePlayer(diceRoll);
+        }
+        
+        function movePlayer(steps) {
+            position = (position + steps) % boardSpaces.length;
+            let newSpace = document.getElementById(boardSpaces[position]);
+            if (newSpace) {
+                newSpace.appendChild(player); // Move player inside the correct space
+            } else {
+                console.error("Space not found: ", boardSpaces[position]);
+            }
+        }
+    </script>
+</body>
+</html>
