@@ -1,110 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monopoly Game</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f4f4f4;
-        }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(11, 60px);
-            grid-template-rows: repeat(11, 60px);
-            border: 5px solid black;
-            background-color: green;
-            position: relative;
-        }
-        .space {
-            border: 1px solid black;
-            background: white;
-            text-align: center;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .corner {
-            background: lightgray;
-            font-weight: bold;
-        }
-        .player {
-            width: 20px;
-            height: 20px;
-            background: red;
-            border-radius: 50%;
-            position: absolute;
-            transition: 0.5s ease;
-        }
-        .dice {
-            margin-top: 20px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Monopoly — Expanded</title>
+  <style>
+    :root{--tile:60px;--edge-font:10px}
+    *{box-sizing:border-box}
+    body{margin:0;padding:16px;background:#f5f6f8;font-family:system-ui,Segoe UI,Roboto,Arial;display:flex;flex-direction:column;align-items:center;gap:12px}
+    .board{display:grid;grid-template-columns:repeat(11,var(--tile));grid-template-rows:repeat(11,var(--tile));border:6px solid #111;background:#2e7d32;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;position:relative;}
+    .space{border:1px solid #111;background:#fff;display:flex;align-items:center;justify-content:center;font-size:var(--edge-font);text-align:center;position:relative;overflow:hidden;padding:2px}
+    .space.inner{background:transparent;border:none}
+    .token-chip{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#ffd54f;border:2px solid #000;font-size:14px;line-height:1;position:absolute;transition:transform .25s}
+    .token-chip.p1{background:#ffeb3b}.token-chip.p2{background:#90caf9}.token-stack{position:absolute;inset:2px}
+    .hud{width:100%;max-width:980px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .panel{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .money{font-weight:700}
+    .selection{text-align:center}
+    .token{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;margin:6px;border:2px solid #222;border-radius:10px;cursor:pointer;background:#fff}
+    .token.selected{outline:3px solid #e53935}
+    .dice{display:none}.dice button{padding:8px 12px;border-radius:8px;border:1px solid #111;background:#fff;cursor:pointer}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    button.primary{background:#111;color:#fff;border:1px solid #111;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .log{width:100%;max-width:980px;height:140px;overflow:auto}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .prop-row{display:flex;gap:8px;align-items:center}
+    .small{font-size:12px}
+  </style>
 </head>
 <body>
-    <div class="board" id="board"></div>
-    <div class="dice">
-        <button onclick="rollDice()">Roll Dice</button>
-        <p id="diceResult">Roll: </p>
+  <h1>Monopoly — Expanded (houses/auctions/mortgage)</h1>
+
+  <div class="panel selection" id="selectionScreen">
+    <h3>Choose Your Tokens</h3>
+    <div>
+      <strong>Player 1</strong><br>
+      <span class="token" onclick="selectToken(0,'🚗',event)">🚗 Car</span>
+      <span class="token" onclick="selectToken(0,'🎩',event)">🎩 Top Hat</span>
+      <span class="token" onclick="selectToken(0,'🛳️',event)">🛳️ Battleship</span>
+      <span class="token" onclick="selectToken(0,'🐱',event)">🐱 Cat</span>
     </div>
-    
-    <script>
-        let board = document.getElementById("board");
-        let boardSpaces = [];
-        
-        // Create board spaces dynamically for the outer edge only
-        for (let i = 0; i < 11; i++) boardSpaces.push(`space-0-${i}`); // Top row left to right
-        for (let i = 1; i < 10; i++) boardSpaces.push(`space-${i}-10`); // Right column top to bottom
-        for (let i = 10; i >= 0; i--) boardSpaces.push(`space-10-${i}`); // Bottom row right to left
-        for (let i = 9; i > 0; i--) boardSpaces.push(`space-${i}-0`); // Left column bottom to top
-        
-        // Create the board spaces dynamically
-        for (let row = 0; row < 11; row++) {
-            for (let col = 0; col < 11; col++) {
-                let div = document.createElement("div");
-                div.className = "space";
-                let id = `space-${row}-${col}`;
-                div.id = id;
-                
-                if (boardSpaces.includes(id)) {
-                    div.classList.add("edge");
-                    div.innerText = id;
-                } else {
-                    div.style.background = "transparent"; // Hide inner spaces
-                }
-                
-                board.appendChild(div);
-            }
+    <div style="margin-top:8px">
+      <strong>Player 2</strong><br>
+      <span class="token" onclick="selectToken(1,'🐕',event)">🐕 Scottie</span>
+      <span class="token" onclick="selectToken(1,'🏇',event)">🏇 Horse</span>
+      <span class="token" onclick="selectToken(1,'🦆',event)">🦆 Ducky</span>
+      <span class="token" onclick="selectToken(1,'🦕',event)">🦕 T-Rex</span>
+    </div>
+    <div style="margin-top:10px"><button class="primary" onclick="startGame()">Start Game</button></div>
+  </div>
+
+  <div class="hud">
+    <div class="panel money" id="bank">P1: $<span id="p1Cash">1500</span> | P2: $<span id="p2Cash">1500</span></div>
+    <div class="panel dice" id="dicePanel">
+      <div class="actions">
+        <button id="rollBtn" onclick="rollDice()">Roll Dice</button>
+        <button id="buyBtn" onclick="attemptBuy()" disabled>Buy</button>
+        <button id="auctionBtn" onclick="startAuction()" disabled>Auction</button>
+        <button id="mortgageBtn" onclick="toggleMortgage()">Mortgage/Unmortgage</button>
+        <button id="buildBtn" onclick="buildHouse()">Build House</button>
+        <button id="endBtn" onclick="endTurn()" disabled>End Turn</button>
+      </div>
+      <div class="dice-readout" id="diceResult">Roll: —</div>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="panel log"><pre id="log"></pre></div>
+
+  <script>
+    // ----- Utilities -----
+    const logEl=document.getElementById('log'); function log(m){logEl.textContent+=`\n${m}`;logEl.scrollTop=logEl.scrollHeight}
+
+    // ----- Board edges mapping -----
+    const boardEl=document.getElementById('board'); const edgeIds=[];
+    for(let c=0;c<11;c++)edgeIds.push(`space-0-${c}`);
+    for(let r=1;r<10;r++)edgeIds.push(`space-${r}-10`);
+    for(let c=10;c>=0;c--)edgeIds.push(`space-10-${c}`);
+    for(let r=9;r>0;r--)edgeIds.push(`space-${r}-0`);
+
+    // ----- Full track with build prices and house rules simplified -----
+    const track=[
+      {name:'GO',type:'go'},
+      {name:'Mediterranean Ave',type:'property',color:'#8B4513',price:60,rent:2,housePrice:50,group:'brown'},
+      {name:'Community Chest',type:'chest'},
+      {name:'Baltic Ave',type:'property',color:'#8B4513',price:60,rent:4,housePrice:50,group:'brown'},
+      {name:'Income Tax',type:'tax',amount:200},
+      {name:'Reading Railroad',type:'rr',price:200,rrRent:[25,50,100,200]},
+      {name:'Oriental Ave',type:'property',color:'#ADD8E6',price:100,rent:6,housePrice:50,group:'lightBlue'},
+      {name:'Chance',type:'chance'},
+      {name:'Vermont Ave',type:'property',color:'#ADD8E6',price:100,rent:6,housePrice:50,group:'lightBlue'},
+      {name:'Connecticut Ave',type:'property',color:'#ADD8E6',price:120,rent:8,housePrice:50,group:'lightBlue'},
+
+      {name:'Jail / Just Visiting',type:'jail'},
+      {name:'St. Charles Place',type:'property',color:'#FF69B4',price:140,rent:10,housePrice:100,group:'pink'},
+      {name:'Electric Company',type:'utility',price:150},
+      {name:'States Ave',type:'property',color:'#FF69B4',price:140,rent:10,housePrice:100,group:'pink'},
+      {name:'Virginia Ave',type:'property',color:'#FF69B4',price:160,rent:12,housePrice:100,group:'pink'},
+      {name:'Pennsylvania Railroad',type:'rr',price:200,rrRent:[25,50,100,200]},
+      {name:'St. James Place',type:'property',color:'#FFA500',price:180,rent:14,housePrice:100,group:'orange'},
+      {name:'Community Chest',type:'chest'},
+      {name:'Tennessee Ave',type:'property',color:'#FFA500',price:180,rent:14,housePrice:100,group:'orange'},
+      {name:'New York Ave',type:'property',color:'#FFA500',price:200,rent:16,housePrice:100,group:'orange'},
+
+      {name:'Free Parking',type:'free'},
+      {name:'Kentucky Ave',type:'property',color:'#FF0000',price:220,rent:18,housePrice:150,group:'red'},
+      {name:'Chance',type:'chance'},
+      {name:'Indiana Ave',type:'property',color:'#FF0000',price:220,rent:18,housePrice:150,group:'red'},
+      {name:'Illinois Ave',type:'property',color:'#FF0000',price:240,rent:20,housePrice:150,group:'red'},
+      {name:'B. & O. Railroad',type:'rr',price:200,rrRent:[25,50,100,200]},
+      {name:'Atlantic Ave',type:'property',color:'#FFFF00',price:260,rent:22,housePrice:150,group:'yellow'},
+      {name:'Ventnor Ave',type:'property',color:'#FFFF00',price:260,rent:22,housePrice:150,group:'yellow'},
+      {name:'Water Works',type:'utility',price:150},
+      {name:'Marvin Gardens',type:'property',color:'#FFFF00',price:280,rent:24,housePrice:150,group:'yellow'},
+
+      {name:'Go To Jail',type:'gotojail'},
+      {name:'Pacific Ave',type:'property',color:'#008000',price:300,rent:26,housePrice:200,group:'green'},
+      {name:'North Carolina Ave',type:'property',color:'#008000',price:300,rent:26,housePrice:200,group:'green'},
+      {name:'Community Chest',type:'chest'},
+      {name:'Pennsylvania Ave',type:'property',color:'#008000',price:320,rent:28,housePrice:200,group:'green'},
+      {name:'Short Line',type:'rr',price:200,rrRent:[25,50,100,200]},
+      {name:'Chance',type:'chance'},
+      {name:'Park Place',type:'property',color:'#0000CD',price:350,rent:35,housePrice:200,group:'darkBlue'},
+      {name:'Luxury Tax',type:'tax',amount:100},
+      {name:'Boardwalk',type:'property',color:'#0000CD',price:400,rent:50,housePrice:200,group:'darkBlue'}
+    ];
+
+    // Build grid labeling only edge spaces and stacks
+    for(let r=0;r<11;r++){
+      for(let c=0;c<11;c++){
+        const id=`space-${r}-${c}`; const div=document.createElement('div'); div.id=id;
+        const idx=edgeIds.indexOf(id);
+        if(idx===-1){ div.className='space inner'; }
+        else{
+          div.className='space'; const t=track[idx];
+          const title=document.createElement('div'); title.textContent=t.name; title.className='small';
+          if(t.type==='property'){ const sw=document.createElement('div'); sw.style.position='absolute'; sw.style.top='0'; sw.style.left='0'; sw.style.right='0'; sw.style.height='8px'; sw.style.background=t.color; div.appendChild(sw); }
+          const stack=document.createElement('div'); stack.className='token-stack'; stack.id=`stack-${idx}`; div.appendChild(title); div.appendChild(stack);
         }
-        
-        let position = 0;
-        let player = document.createElement("div");
-        player.classList.add("player");
-        document.getElementById("space-0-0").appendChild(player); // Start at 'Go'
-        
-        function rollDice() {
-            let diceRoll = Math.floor(Math.random() * 6) + 1;
-            document.getElementById("diceResult").innerText = "Roll: " + diceRoll;
-            movePlayer(diceRoll);
-        }
-        
-        function movePlayer(steps) {
-            position = (position + steps) % boardSpaces.length;
-            let newSpace = document.getElementById(boardSpaces[position]);
-            if (newSpace) {
-                newSpace.appendChild(player); // Move player inside the correct space
-            } else {
-                console.error("Space not found: ", boardSpaces[position]);
-            }
-        }
-    </script>
+        boardEl.appendChild(div);
+      }
+    }
+
+    // --- Game state ---
+    const cash=[1500,1500]; const cashEls=[document.getElementById('p1Cash'),document.getElementById('p2Cash')];
+    function setCash(p,a){cash[p]=a;cashEls[p].textContent=cash[p]}
+    function addCash(p,d){setCash(p,cash[p]+d)}
+
+    const players=[{idx:0,name:'P1',token:'',pos:0,inJail:false,jailTurns:0,owned:[]},{idx:1,name:'P2',token:'',pos:0,inJail:false,jailTurns:0,owned:[]}];
+    const selectedTokens=['','']; const ownership=Array(40).fill(null); // {owner, mortgaged, houses}
+
+    // ----- Selection -----
+    function selectToken(player,token,event){ selectedTokens[player]=token; [...document.querySelectorAll('.token')].forEach(el=>el.classList.remove('selected')); event.target.classList.add('selected'); }
+    function startGame(){ if(!selectedTokens[0]||!selectedTokens[1]){alert('Both must select');return} players[0].token=selectedTokens[0]; players[1].token=selectedTokens[1]; document.getElementById('selectionScreen').style.display='none'; boardEl.style.display='grid'; document.getElementById('dicePanel').style.display='block'; players.forEach((p,i)=>{ const chip=document.createElement('div'); chip.className=`token-chip p${i+1}`; chip.textContent=p.token; chip.id=`chip-${i}`; chip.style.transform=`translate(${i*22}px,0)`; document.getElementById('stack-0').appendChild(chip); }); log('Game started. P1 turn.'); updateActionButtons(); }
+
+    // ----- Turns & dice -----
+    let turn=0; let lastRoll=0; let rolledDoubles=false;
+    function current(){return players[turn]}
+    function rollDie(){return Math.floor(Math.random()*6)+1}
+    function rollDice(){ const d1=rollDie(), d2=rollDie(); lastRoll=d1+d2; rolledDoubles=(d1===d2); document.getElementById('diceResult').textContent=`Roll: ${d1}+${d2}=${lastRoll}${rolledDoubles?' (doubles)':''}`; log(`${current().name} rolled ${d1}+${d2}`);
+      if(current().inJail){ if(rolledDoubles){ current().inJail=false; current().jailTurns=0; log('Released from jail by doubles.'); } else { current().jailTurns++; if(current().jailTurns>=3){ addCash(turn,-50); current().inJail=false; current().jailTurns=0; log('Paid $50 and released from jail.'); } updateActionButtons(); return; } }
+      moveBy(lastRoll); if(!rolledDoubles) document.getElementById('endBtn').disabled=false; updateActionButtons(); }
+
+    function moveBy(steps){ const p=current(); const old=p.pos; const next=(old+steps)%40; if(old+steps>=40){ addCash(turn,200); log(`${p.name} passed GO (+$200)`);} placeChip(turn,next); p.pos=next; resolveLanding(next); }
+    function placeChip(playerIndex,trackIndex){ const chip=document.getElementById(`chip-${playerIndex}`); const stack=document.getElementById(`stack-${trackIndex}`); if(!stack){console.error('stack missing',trackIndex);return} const existing=stack.querySelectorAll('.token-chip').length; chip.style.transform=`translate(${existing*22}px,0)`; stack.appendChild(chip); }
+
+    // ----- Buy / Auction / Mortgage / Build -----
+    function spot(){ return track[current().pos]; }
+    function attemptBuy(){ const s=spot(); const idx=current().pos; if(!(s.type==='property'||s.type==='rr'||s.type==='utility')) return; if(ownership[idx]){ log('Already owned'); return } if(cash[turn]<s.price){ log('Not enough cash'); return } addCash(turn,-s.price); ownership[idx]={owner:turn,mortgaged:false,houses:0}; players[turn].owned.push(idx); log(`${current().name} bought ${s.name} for $${s.price}`); updateActionButtons(); }
+
+    function startAuction(){ const s=spot(); const idx=current().pos; if(ownership[idx]){ log('Already owned'); return } // simple prompt auction
+      let highest={player:null, bid:0}; let cont=true; let round=0;
+      while(cont){ round++; const bidder = prompt(`Auction round ${round}: enter player number (1 or 2) to bid, or Cancel to stop`); if(!bidder) break; const pnum=parseInt(bidder)-1; if(isNaN(pnum)||pnum<0||pnum>1){ alert('Invalid player'); continue } const amountStr=prompt(`Player ${pnum+1} enter bid amount (current highest ${highest.bid})`); const amount=parseInt(amountStr); if(isNaN(amount) || amount<=highest.bid){ alert('Bid must be higher'); continue } highest={player:pnum,bid:amount}; }
+      if(highest.player!==null){ if(cash[highest.player]<highest.bid){ log('Winner cannot pay. Auction canceled.'); return } addCash(highest.player,-highest.bid); ownership[idx]={owner:highest.player,mortgaged:false,houses:0}; players[highest.player].owned.push(idx); log(`Auction: P${highest.player+1} won ${s.name} for $${highest.bid}`); } else log('Auction ended without winner'); updateActionButtons(); }
+
+    function toggleMortgage(){ const idx=current().pos; const s=track[idx]; if(!(s && (s.type==='property'||s.type==='rr'||s.type==='utility'))) { log('Not a mortgagable space'); return } const meta=ownership[idx]; if(!meta){ log('Not owned'); return } if(meta.owner!==turn){ log('You do not own this'); return } const mortgageValue=Math.floor(s.price/2);
+      if(!meta.mortgaged){ meta.mortgaged=true; addCash(turn,mortgageValue); log(`${current().name} mortgaged ${s.name} for $${mortgageValue}`); } else { const unmortgageCost=Math.floor(mortgageValue*1.1); if(cash[turn]<unmortgageCost){ log('Insufficient funds to unmortgage'); return } meta.mortgaged=false; addCash(turn,-unmortgageCost); log(`${current().name} unmortgaged ${s.name} for $${unmortgageCost}`); } updateActionButtons(); }
+
+    function buildHouse(){ const idx=current().pos; const s=track[idx]; if(!(s && s.type==='property')){ log('Not a property'); return } const meta=ownership[idx]; if(!meta || meta.owner!==turn){ log('You must own the property to build'); return } // check color monopoly
+      const group = s.group; const groupIndexes = track.map((t,i)=> t.group===group ? i : -1).filter(i=>i>=0);
+      const ownsAll = groupIndexes.every(i=> ownership[i] && ownership[i].owner===turn && !ownership[i].mortgaged);
+      if(!ownsAll){ log('You must own all properties in color group to build'); return }
+      // simplified: housePrice = s.housePrice
+      const price = s.housePrice || Math.floor(s.price/2);
+      if(cash[turn]<price){ log('Not enough cash to build'); return }
+      ownership[idx].houses = (ownership[idx].houses||0)+1;
+      addCash(turn,-price);
+      log(`${current().name} built house on ${s.name} for $${price}. Houses now: ${ownership[idx].houses}`);
+      updateActionButtons(); }
+
+    // ----- Rent resolution -----
+    function ownedUtilities(owner){ let count=0; ['Electric Company','Water Works'].forEach(n=>{const id=track.findIndex(t=>t.name===n); if(id!==-1 && ownership[id] && ownership[id].owner===owner) count++;}); return count }
+    function resolveLanding(idx){ const s=track[idx]; const me=turn; const other=turn^1; document.getElementById('buyBtn').disabled = !( (s && (s.type==='property'||s.type==='rr'||s.type==='utility')) && !ownership[idx] ); document.getElementById('auctionBtn').disabled = !(s && (s.type==='property'||s.type==='rr'||s.type==='utility') && !ownership[idx]);
+      if(!s) return; if(s.type==='go'){} else if(s.type==='tax'){ addCash(me,-s.amount); log(`${current().name} paid tax $${s.amount}`) } else if(s.type==='free'){ log('Free Parking') } else if(s.type==='gotojail'){ goToJail(me) } else if(s.type==='jail'){ log('Just Visiting') } else if(s.type==='chance'){ drawChance() } else if(s.type==='chest'){ drawChest() } else if(s.type==='utility'||s.type==='rr'||s.type==='property'){ const own=ownership[idx]; if(own && own.owner!==me){ let rent=0; if(s.type==='property'){ const houses=(ownership[idx].houses||0); // basic rent scaling: base + houses* (base*2)
+                rent = s.rent + houses * (s.rent*2);
+              } else if(s.type==='rr'){ // railroad rent depends on number owned
+                const rrCount = [5,15,25,35].reduce((acc,v,i)=> acc + ((ownership.filter(o=>o && track[ownership.indexOf(o)] && track[ownership.indexOf(o)].type==='rr' && o.owner===own.owner)?0:0),0),0); // fallback simplified
+                // simpler: fixed 25 per railroad owned by owner * (1 + houses irrelevant)
+                rent = 25; // simplified
+              } else if(s.type==='utility'){ rent = (lastRoll||7) * (ownedUtilities(own.owner)===2?10:4) }
+              if(own.mortgaged){ log('Property is mortgaged — no rent collected'); return }
+              pay(own.owner,rent); log(`${current().name} paid $${rent} rent to P${own.owner+1} for ${s.name}`);
+            } else if(!own){ log(`${s.name} is unowned. You may buy for $${s.price} or auction.`) }
+      }
+    }
+
+    function pay(to,amount){ addCash(turn,-amount); addCash(to,amount); }
+
+    function goToJail(pIndex){ const jailIndex=10; players[pIndex].pos=jailIndex; players[pIndex].inJail=true; players[pIndex].jailTurns=0; placeChip(pIndex,jailIndex); log(`${players[pIndex].name} sent to Jail`); }
+
+    // ----- Chance / Chest expanded -----
+    const chanceDeck=[
+      ()=>{ moveTo(0); addCash(turn,200); log('Chance: Advance to GO (collect $200)') },
+      ()=>{ moveTo(24); log('Chance: Advance to Illinois Ave') ; resolveLanding(current().pos); },
+      ()=>{ addCash(turn,-50); log('Chance: Pay $50') },
+      ()=>{ moveTo(11); log('Chance: Advance to St. Charles Place'); resolveLanding(current().pos); }
+    ];
+    const chestDeck=[()=>{ addCash(turn,200); log('Community Chest: Collect $200') }, ()=>{ addCash(turn,-100); log('Community Chest: Pay $100') }, ()=>{ goToJail(turn); }];
+    function drawChance(){ chanceDeck[Math.floor(Math.random()*chanceDeck.length)]() }
+    function drawChest(){ chestDeck[Math.floor(Math.random()*chestDeck.length)]() }
+
+    function moveTo(trackIndex){ const p=current(); if(trackIndex < p.pos){ addCash(turn,200); log(`${p.name} passed GO (+$200)`)} placeChip(turn,trackIndex); p.pos=trackIndex; }
+
+    // ----- Auction/Mortgage helpers -----
+    function startAuction(){ // same as earlier simplified interactive prompt approach
+      const s=spot(); const idx=current().pos; if(ownership[idx]){ log('Already owned'); return } let highest={player:null,bid:0}; while(true){ const who=prompt('Auction: enter player number to bid (1 or 2) or Cancel to finish'); if(!who) break; const p=parseInt(who)-1; if(isNaN(p)||p<0||p>1){ alert('Invalid'); continue } const amtStr=prompt(`Player ${p+1} enter bid (must be higher than ${highest.bid})`); const amt=parseInt(amtStr); if(isNaN(amt)||amt<=highest.bid){ alert('Bid too low'); continue } highest={player:p,bid:amt}; }
+      if(highest.player!==null){ if(cash[highest.player]<highest.bid){ log('Winner cannot pay'); return } addCash(highest.player,-highest.bid); ownership[idx]={owner:highest.player,mortgaged:false,houses:0}; players[highest.player].owned.push(idx); log(`Auction: P${highest.player+1} won ${s.name} for $${highest.bid}`) } else log('Auction ended without winner'); updateActionButtons(); }
+
+    function toggleMortgage(){ const idx=current().pos; const s=track[idx]; if(!(s && (s.type==='property'||s.type==='rr'||s.type==='utility'))){ log('Not mortgagable'); return } const m=ownership[idx]; if(!m || m.owner!==turn){ log('You do not own this'); return } const val=Math.floor(s.price/2); if(!m.mortgaged){ m.mortgaged=true; addCash(turn,val); log(`${current().name} mortgaged ${s.name} for $${val}`) } else { const cost=Math.floor(val*1.1); if(cash[turn]<cost){ log('Not enough to unmortgage'); return } m.mortgaged=false; addCash(turn,-cost); log(`${current().name} unmortgaged ${s.name} for $${cost}`) } updateActionButtons(); }
+
+    function buildHouse(){ const idx=current().pos; const s=track[idx]; if(!(s && s.type==='property')){ log('Not a property'); return } const m=ownership[idx]; if(!m || m.owner!==turn){ log('You must own property'); return } const group=s.group; const groupIdx=track.map((t,i)=>t.group===group?i:-1).filter(i=>i>=0); const ownsAll=groupIdx.every(i=> ownership[i] && ownership[i].owner===turn && !ownership[i].mortgaged); if(!ownsAll){ log('Must own whole color group'); return } const price=s.housePrice||Math.floor(s.price/2); if(cash[turn]<price){ log('Not enough cash'); return } m.houses=(m.houses||0)+1; addCash(turn,-price); log(`${current().name} built house on ${s.name} for $${price} (houses:${m.houses})`); }
+
+    // ----- Helpers & turn end -----
+    function spot(){ return track[current().pos] }
+    function updateActionButtons(){ document.getElementById('rollBtn').disabled=false; const s=spot(); const canBuy = s && (s.type==='property'||s.type==='rr'||s.type==='utility') && !ownership[current().pos]; document.getElementById('buyBtn').disabled=!canBuy; document.getElementById('auctionBtn').disabled=!canBuy; }
+    function endTurn(){ if(rolledDoubles){ log('Rolled doubles — keep turn'); rolledDoubles=false; return } turn^=1; document.getElementById('diceResult').textContent='Roll: —'; updateActionButtons(); log(`P${turn+1}'s turn`); }
+
+    // init sanity checks
+    console.assert(edgeIds.length===40,'40 edge spaces'); console.assert(track.length===40,'track 40');
+  </script>
 </body>
 </html>
